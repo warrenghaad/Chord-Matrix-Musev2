@@ -1,29 +1,420 @@
-// template
-import { StyleSheet, Text, View } from "react-native";
+import React, { useState, useCallback, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Platform,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+  useSharedValue,
+  withSequence,
+  withTiming,
+  FadeIn,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Colors from "@/constants/colors";
+import {
+  Emotion,
+  Progression,
+  generateProgression,
+  formatChord,
+} from "@/lib/music-engine";
+import EmotionGrid from "@/components/EmotionGrid";
+import KeySelector from "@/components/KeySelector";
+import ChordCard from "@/components/ChordCard";
 
-export default function TabOneScreen() {
+const STORAGE_KEY = "@chordflow_saved";
+
+export default function GenerateScreen() {
+  const insets = useSafeAreaInsets();
+  const { palette } = Colors;
+
+  const [selectedEmotion, setSelectedEmotion] = useState<Emotion | null>(null);
+  const [selectedKey, setSelectedKey] = useState("C");
+  const [currentProgression, setCurrentProgression] =
+    useState<Progression | null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const buttonScale = useSharedValue(1);
+  const buttonRotate = useSharedValue(0);
+
+  const buttonAnimStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: buttonScale.value },
+      { rotate: `${buttonRotate.value}deg` },
+    ],
+  }));
+
+  const handleGenerate = useCallback(() => {
+    if (!selectedEmotion) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    buttonScale.value = withSequence(
+      withTiming(0.9, { duration: 80 }),
+      withSpring(1.05, { damping: 6 }),
+      withSpring(1, { damping: 10 })
+    );
+    buttonRotate.value = withSequence(
+      withTiming(15, { duration: 60 }),
+      withTiming(-15, { duration: 60 }),
+      withSpring(0, { damping: 8 })
+    );
+
+    setGenerating(true);
+    setTimeout(() => {
+      const prog = generateProgression(selectedEmotion, selectedKey);
+      setCurrentProgression(prog);
+      setGenerating(false);
+    }, 150);
+  }, [selectedEmotion, selectedKey]);
+
+  const handleSave = useCallback(async () => {
+    if (!currentProgression) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    try {
+      const existing = await AsyncStorage.getItem(STORAGE_KEY);
+      const saved: Progression[] = existing ? JSON.parse(existing) : [];
+      saved.unshift({ ...currentProgression, saved: true });
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+      setCurrentProgression({ ...currentProgression, saved: true });
+    } catch (e) {
+      console.error("Save failed:", e);
+    }
+  }, [currentProgression]);
+
+  const webTopInset = Platform.OS === "web" ? 67 : 0;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your Replit app will be here</Text>
-      <Text style={styles.text}>Please wait until we finish building it</Text>
+    <View style={[styles.container, { backgroundColor: palette.midnight }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: insets.top + 16 + webTopInset,
+            paddingBottom: 120,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: palette.textPrimary }]}>
+            ChordFlow
+          </Text>
+          <Text style={[styles.subtitle, { color: palette.textMuted }]}>
+            Emotion-driven chord progressions
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Feather name="music" size={16} color={palette.amber} />
+            <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+              Key Center
+            </Text>
+          </View>
+          <KeySelector selected={selectedKey} onSelect={setSelectedKey} />
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Feather name="heart" size={16} color={palette.amber} />
+            <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
+              Emotion
+            </Text>
+          </View>
+          <EmotionGrid
+            selected={selectedEmotion}
+            onSelect={setSelectedEmotion}
+          />
+        </View>
+
+        <Animated.View style={buttonAnimStyle}>
+          <Pressable
+            onPress={handleGenerate}
+            disabled={!selectedEmotion}
+            style={[
+              styles.generateButton,
+              {
+                backgroundColor: selectedEmotion
+                  ? palette.amber
+                  : palette.slateLight,
+                opacity: selectedEmotion ? 1 : 0.5,
+              },
+            ]}
+          >
+            <Feather
+              name="shuffle"
+              size={20}
+              color={selectedEmotion ? palette.midnight : palette.textMuted}
+            />
+            <Text
+              style={[
+                styles.generateText,
+                {
+                  color: selectedEmotion
+                    ? palette.midnight
+                    : palette.textMuted,
+                },
+              ]}
+            >
+              {generating ? "Generating..." : "Randomize Progression"}
+            </Text>
+          </Pressable>
+        </Animated.View>
+
+        {currentProgression && (
+          <Animated.View entering={FadeIn.duration(300)} style={styles.resultSection}>
+            <View style={styles.resultHeader}>
+              <View>
+                <Text
+                  style={[styles.resultTitle, { color: palette.textPrimary }]}
+                >
+                  Your Progression
+                </Text>
+                <Text
+                  style={[styles.resultMeta, { color: palette.textMuted }]}
+                >
+                  {selectedEmotion} / Key of {currentProgression.key}
+                </Text>
+              </View>
+              <Pressable
+                onPress={handleSave}
+                disabled={currentProgression.saved}
+                hitSlop={12}
+              >
+                <Feather
+                  name={currentProgression.saved ? "check" : "bookmark"}
+                  size={22}
+                  color={
+                    currentProgression.saved
+                      ? palette.success
+                      : palette.amber
+                  }
+                />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chordsRow}
+            >
+              {currentProgression.chords.map((chord, i) => (
+                <ChordCard
+                  key={`${currentProgression.id}-${i}`}
+                  chord={chord}
+                  index={i}
+                  isLast={i === currentProgression.chords.length - 1}
+                />
+              ))}
+            </ScrollView>
+
+            <View style={[styles.narrativeBox, { backgroundColor: palette.deepNavy, borderColor: palette.cardBorder }]}>
+              <View style={styles.narrativeHeader}>
+                <Feather name="book-open" size={14} color={palette.amber} />
+                <Text style={[styles.narrativeTitle, { color: palette.amber }]}>
+                  Narrative Arc
+                </Text>
+              </View>
+              <Text style={[styles.narrativeText, { color: palette.textSecondary }]}>
+                {currentProgression.chords
+                  .map((c, i) => {
+                    const roles: Record<string, string> = {
+                      setup: "establishes the mood",
+                      rising: "builds tension",
+                      climax: "reaches the peak",
+                      resolution: "brings it home",
+                      color: "adds emotional shade",
+                    };
+                    return `${formatChord(c)} ${roles[c.narrativeRole]}`;
+                  })
+                  .join(", then ")}
+                .
+              </Text>
+            </View>
+
+            <View style={[styles.extensionBox, { backgroundColor: palette.deepNavy, borderColor: palette.cardBorder }]}>
+              <View style={styles.narrativeHeader}>
+                <Feather name="sliders" size={14} color="#EC4899" />
+                <Text style={[styles.narrativeTitle, { color: "#EC4899" }]}>
+                  Solo Extensions Guide
+                </Text>
+              </View>
+              {currentProgression.chords
+                .filter((c) => c.extension)
+                .map((c, i) => (
+                  <View key={i} style={styles.extensionRow}>
+                    <Text
+                      style={[
+                        styles.extensionChordName,
+                        { color: palette.textPrimary },
+                      ]}
+                    >
+                      {formatChord(c)}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.extensionHint,
+                        { color: palette.textMuted },
+                      ]}
+                    >
+                      {getExtensionHint(c.extension!)}
+                    </Text>
+                  </View>
+                ))}
+            </View>
+          </Animated.View>
+        )}
+      </ScrollView>
     </View>
   );
+}
+
+function getExtensionHint(ext: string): string {
+  const hints: Record<string, string> = {
+    "7": "Dominant pull. Target b7 in your lines.",
+    maj7: "Lush and open. Let the major 7th ring.",
+    min7: "Smooth minor. Walk through the b7.",
+    "9": "Color the 9th over the root. Wide voicing.",
+    maj9: "Dreamy. Float the 9th over maj7.",
+    min9: "Deep and searching. b3 to 9 is your interval.",
+    "11": "Suspended quality. Lean into the 4th.",
+    "13": "Rich and full. The 13th adds brightness.",
+    add9: "Simple color. Just the 9th, no 7th needed.",
+    "6": "Sweet and vintage. Classic jazz color.",
+    min6: "Dorian flavor. The natural 6 over minor.",
+    "7b5": "Locrian tension. Tritone from the root.",
+    "7#5": "Augmented dominant. Whole-tone scale moment.",
+    "7b9": "Dark dominant. Minor 9th interval creates drama.",
+    "7#9": "The Hendrix chord. Blues-rock grit.",
+    "7#11": "Lydian dominant. Bright and otherworldly.",
+    dim7: "Symmetric. Every note is a minor 3rd apart.",
+    m7b5: "Half-diminished. Gateway to minor ii-V.",
+    alt: "Altered scale. All tensions raised or lowered.",
+    sus: "No 3rd. Pure suspension and ambiguity.",
+    "6/9": "Warm and complete. Great for endings.",
+  };
+  return hints[ext] || "Explore this color in your solo.";
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    gap: 24,
+  },
+  header: {
+    gap: 4,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 32,
+    fontFamily: "JetBrainsMono_700Bold",
+    letterSpacing: -1,
   },
-  text: {
+  subtitle: {
+    fontSize: 13,
+    fontFamily: "SpaceMono_400Regular",
+  },
+  section: {
+    gap: 12,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontFamily: "SpaceMono_700Bold",
+  },
+  generateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
+  },
+  generateText: {
     fontSize: 16,
-    textAlign: "center",
-    paddingHorizontal: 20,
+    fontFamily: "SpaceMono_700Bold",
+  },
+  resultSection: {
+    gap: 16,
+  },
+  resultHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  resultTitle: {
+    fontSize: 18,
+    fontFamily: "SpaceMono_700Bold",
+  },
+  resultMeta: {
+    fontSize: 12,
+    fontFamily: "SpaceMono_400Regular",
+    marginTop: 2,
+  },
+  chordsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  narrativeBox: {
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    gap: 8,
+  },
+  narrativeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  narrativeTitle: {
+    fontSize: 12,
+    fontFamily: "SpaceMono_700Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  narrativeText: {
+    fontSize: 13,
+    fontFamily: "SpaceMono_400Regular",
+    lineHeight: 20,
+  },
+  extensionBox: {
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    gap: 10,
+  },
+  extensionRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start",
+  },
+  extensionChordName: {
+    fontSize: 14,
+    fontFamily: "JetBrainsMono_700Bold",
+    width: 80,
+  },
+  extensionHint: {
+    fontSize: 12,
+    fontFamily: "SpaceMono_400Regular",
+    lineHeight: 17,
+    flex: 1,
   },
 });

@@ -1,0 +1,385 @@
+export type Emotion =
+  | "melancholic"
+  | "triumphant"
+  | "mysterious"
+  | "dreamy"
+  | "aggressive"
+  | "tender"
+  | "nostalgic"
+  | "dark"
+  | "euphoric"
+  | "contemplative";
+
+export type ChordQuality =
+  | "maj"
+  | "min"
+  | "dim"
+  | "aug"
+  | "sus2"
+  | "sus4"
+  | "dom";
+
+export type Extension =
+  | "7"
+  | "maj7"
+  | "min7"
+  | "9"
+  | "maj9"
+  | "min9"
+  | "11"
+  | "13"
+  | "add9"
+  | "6"
+  | "min6"
+  | "7b5"
+  | "7#5"
+  | "7b9"
+  | "7#9"
+  | "7#11"
+  | "dim7"
+  | "m7b5"
+  | "alt"
+  | "sus"
+  | "6/9";
+
+export interface ChordVoice {
+  root: string;
+  quality: ChordQuality;
+  extension: Extension | null;
+  function: string;
+  tensionLevel: number;
+  narrativeRole: "setup" | "rising" | "climax" | "resolution" | "color";
+}
+
+export interface Progression {
+  id: string;
+  emotion: Emotion;
+  key: string;
+  chords: ChordVoice[];
+  timestamp: number;
+  saved: boolean;
+}
+
+export interface FlowNode {
+  id: string;
+  label: string;
+  role: "tonic" | "subdominant" | "dominant" | "chromatic" | "passing";
+  description: string;
+  narrativeFunction: string;
+  voiceCharacter: string;
+  connections: string[];
+  tensionLevel: number;
+}
+
+export const KEYS = [
+  "C", "Db", "D", "Eb", "E", "F",
+  "F#", "G", "Ab", "A", "Bb", "B",
+];
+
+export const EMOTIONS: { id: Emotion; label: string; icon: string; color: string; description: string }[] = [
+  { id: "melancholic", label: "Melancholic", icon: "water", color: "#6366F1", description: "Bittersweet longing" },
+  { id: "triumphant", label: "Triumphant", icon: "flag", color: "#F59E0B", description: "Victory and power" },
+  { id: "mysterious", label: "Mysterious", icon: "eye", color: "#8B5CF6", description: "Uncertain and questioning" },
+  { id: "dreamy", label: "Dreamy", icon: "cloud", color: "#EC4899", description: "Floating and ethereal" },
+  { id: "aggressive", label: "Aggressive", icon: "zap", color: "#EF4444", description: "Raw energy" },
+  { id: "tender", label: "Tender", icon: "heart", color: "#F472B6", description: "Gentle intimacy" },
+  { id: "nostalgic", label: "Nostalgic", icon: "sunset", color: "#FB923C", description: "Warm memories" },
+  { id: "dark", label: "Dark", icon: "moon", color: "#475569", description: "Ominous weight" },
+  { id: "euphoric", label: "Euphoric", icon: "sun", color: "#10B981", description: "Pure elation" },
+  { id: "contemplative", label: "Contemplative", icon: "coffee", color: "#0EA5E9", description: "Thoughtful depth" },
+];
+
+const SCALE_DEGREES: Record<string, string[]> = {
+  C: ["C", "D", "E", "F", "G", "A", "B"],
+  Db: ["Db", "Eb", "F", "Gb", "Ab", "Bb", "C"],
+  D: ["D", "E", "F#", "G", "A", "B", "C#"],
+  Eb: ["Eb", "F", "G", "Ab", "Bb", "C", "D"],
+  E: ["E", "F#", "G#", "A", "B", "C#", "D#"],
+  F: ["F", "G", "A", "Bb", "C", "D", "E"],
+  "F#": ["F#", "G#", "A#", "B", "C#", "D#", "E#"],
+  G: ["G", "A", "B", "C", "D", "E", "F#"],
+  Ab: ["Ab", "Bb", "C", "Db", "Eb", "F", "G"],
+  A: ["A", "B", "C#", "D", "E", "F#", "G#"],
+  Bb: ["Bb", "C", "D", "Eb", "F", "G", "A"],
+  B: ["B", "C#", "D#", "E", "F#", "G#", "A#"],
+};
+
+interface ProgressionTemplate {
+  degrees: number[];
+  qualities: ChordQuality[];
+  functions: string[];
+  narrativeRoles: ChordVoice["narrativeRole"][];
+  tensions: number[];
+}
+
+const EMOTION_PROGRESSIONS: Record<Emotion, ProgressionTemplate[]> = {
+  melancholic: [
+    { degrees: [1, 6, 4, 5], qualities: ["min", "maj", "maj", "min"], functions: ["i", "VI", "IV", "v"], narrativeRoles: ["setup", "rising", "climax", "resolution"], tensions: [2, 4, 6, 3] },
+    { degrees: [1, 3, 6, 4], qualities: ["min", "maj", "maj", "maj"], functions: ["i", "III", "VI", "IV"], narrativeRoles: ["setup", "color", "rising", "resolution"], tensions: [2, 3, 5, 4] },
+    { degrees: [6, 4, 1, 5], qualities: ["min", "maj", "maj", "dom"], functions: ["vi", "IV", "I", "V"], narrativeRoles: ["setup", "rising", "resolution", "color"], tensions: [4, 5, 2, 6] },
+    { degrees: [1, 7, 6, 5], qualities: ["min", "maj", "maj", "dom"], functions: ["i", "bVII", "VI", "V"], narrativeRoles: ["setup", "rising", "climax", "resolution"], tensions: [2, 5, 4, 7] },
+  ],
+  triumphant: [
+    { degrees: [1, 5, 6, 4], qualities: ["maj", "maj", "min", "maj"], functions: ["I", "V", "vi", "IV"], narrativeRoles: ["setup", "rising", "color", "resolution"], tensions: [1, 5, 3, 2] },
+    { degrees: [1, 4, 5, 1], qualities: ["maj", "maj", "dom", "maj"], functions: ["I", "IV", "V", "I"], narrativeRoles: ["setup", "rising", "climax", "resolution"], tensions: [1, 4, 7, 1] },
+    { degrees: [4, 5, 1, 1], qualities: ["maj", "dom", "maj", "maj"], functions: ["IV", "V", "I", "I"], narrativeRoles: ["setup", "climax", "resolution", "resolution"], tensions: [4, 8, 1, 1] },
+    { degrees: [1, 3, 4, 5], qualities: ["maj", "maj", "maj", "dom"], functions: ["I", "III", "IV", "V"], narrativeRoles: ["setup", "color", "rising", "climax"], tensions: [1, 5, 4, 7] },
+  ],
+  mysterious: [
+    { degrees: [1, 2, 4, 7], qualities: ["min", "dim", "min", "maj"], functions: ["i", "ii°", "iv", "bVII"], narrativeRoles: ["setup", "color", "rising", "climax"], tensions: [3, 7, 5, 6] },
+    { degrees: [1, 7, 6, 7], qualities: ["min", "maj", "maj", "dom"], functions: ["i", "bVII", "bVI", "bVII"], narrativeRoles: ["setup", "rising", "color", "climax"], tensions: [3, 5, 4, 6] },
+    { degrees: [1, 5, 2, 4], qualities: ["min", "dom", "dim", "min"], functions: ["i", "V", "ii°", "iv"], narrativeRoles: ["setup", "climax", "color", "resolution"], tensions: [3, 8, 7, 5] },
+    { degrees: [1, 4, 7, 3], qualities: ["sus4", "min", "maj", "maj"], functions: ["isus", "iv", "bVII", "III"], narrativeRoles: ["setup", "rising", "color", "resolution"], tensions: [4, 5, 5, 3] },
+  ],
+  dreamy: [
+    { degrees: [1, 3, 5, 4], qualities: ["maj", "min", "min", "maj"], functions: ["I", "iii", "v", "IV"], narrativeRoles: ["setup", "color", "rising", "resolution"], tensions: [1, 3, 4, 2] },
+    { degrees: [1, 6, 2, 5], qualities: ["maj", "min", "min", "maj"], functions: ["I", "vi", "ii", "V"], narrativeRoles: ["setup", "rising", "color", "resolution"], tensions: [1, 3, 4, 3] },
+    { degrees: [4, 1, 5, 6], qualities: ["maj", "maj", "maj", "min"], functions: ["IV", "I", "V", "vi"], narrativeRoles: ["color", "setup", "rising", "resolution"], tensions: [2, 1, 3, 3] },
+    { degrees: [2, 4, 6, 1], qualities: ["min", "maj", "min", "maj"], functions: ["ii", "IV", "vi", "I"], narrativeRoles: ["setup", "rising", "color", "resolution"], tensions: [3, 2, 3, 1] },
+  ],
+  aggressive: [
+    { degrees: [1, 5, 7, 4], qualities: ["min", "dom", "maj", "min"], functions: ["i", "V", "bVII", "iv"], narrativeRoles: ["setup", "climax", "rising", "resolution"], tensions: [5, 9, 7, 6] },
+    { degrees: [1, 7, 1, 5], qualities: ["dom", "dom", "dom", "dom"], functions: ["I7", "bVII7", "I7", "V7"], narrativeRoles: ["setup", "rising", "climax", "resolution"], tensions: [6, 7, 8, 9] },
+    { degrees: [1, 2, 7, 1], qualities: ["min", "min", "dom", "min"], functions: ["i", "ii", "bVII", "i"], narrativeRoles: ["setup", "rising", "climax", "resolution"], tensions: [5, 6, 8, 5] },
+    { degrees: [1, 4, 7, 5], qualities: ["min", "min", "maj", "dom"], functions: ["i", "iv", "bVII", "V"], narrativeRoles: ["setup", "color", "rising", "climax"], tensions: [5, 6, 7, 9] },
+  ],
+  tender: [
+    { degrees: [1, 3, 4, 1], qualities: ["maj", "min", "maj", "maj"], functions: ["I", "iii", "IV", "I"], narrativeRoles: ["setup", "color", "rising", "resolution"], tensions: [1, 2, 2, 1] },
+    { degrees: [1, 6, 4, 5], qualities: ["maj", "min", "maj", "maj"], functions: ["I", "vi", "IV", "V"], narrativeRoles: ["setup", "rising", "color", "resolution"], tensions: [1, 3, 2, 3] },
+    { degrees: [2, 5, 1, 6], qualities: ["min", "dom", "maj", "min"], functions: ["ii", "V", "I", "vi"], narrativeRoles: ["setup", "rising", "resolution", "color"], tensions: [2, 4, 1, 2] },
+    { degrees: [1, 4, 6, 5], qualities: ["maj", "maj", "min", "maj"], functions: ["I", "IV", "vi", "V"], narrativeRoles: ["setup", "rising", "color", "resolution"], tensions: [1, 2, 3, 3] },
+  ],
+  nostalgic: [
+    { degrees: [1, 5, 6, 4], qualities: ["maj", "maj", "min", "maj"], functions: ["I", "V", "vi", "IV"], narrativeRoles: ["setup", "rising", "climax", "resolution"], tensions: [1, 4, 5, 3] },
+    { degrees: [1, 4, 1, 5], qualities: ["maj", "maj", "maj", "dom"], functions: ["I", "IV", "I", "V"], narrativeRoles: ["setup", "color", "resolution", "rising"], tensions: [1, 3, 1, 5] },
+    { degrees: [6, 4, 1, 5], qualities: ["min", "maj", "maj", "maj"], functions: ["vi", "IV", "I", "V"], narrativeRoles: ["setup", "rising", "resolution", "color"], tensions: [3, 3, 1, 4] },
+    { degrees: [1, 6, 2, 5], qualities: ["maj", "min", "min", "dom"], functions: ["I", "vi", "ii", "V"], narrativeRoles: ["setup", "color", "rising", "climax"], tensions: [1, 3, 4, 6] },
+  ],
+  dark: [
+    { degrees: [1, 2, 5, 1], qualities: ["min", "dim", "dom", "min"], functions: ["i", "ii°", "V", "i"], narrativeRoles: ["setup", "color", "climax", "resolution"], tensions: [5, 8, 9, 5] },
+    { degrees: [1, 6, 7, 1], qualities: ["min", "maj", "dim", "min"], functions: ["i", "bVI", "vii°", "i"], narrativeRoles: ["setup", "rising", "climax", "resolution"], tensions: [5, 6, 9, 5] },
+    { degrees: [1, 4, 6, 5], qualities: ["min", "min", "maj", "dom"], functions: ["i", "iv", "bVI", "V"], narrativeRoles: ["setup", "color", "rising", "climax"], tensions: [5, 6, 6, 9] },
+    { degrees: [1, 7, 6, 5], qualities: ["min", "maj", "maj", "dom"], functions: ["i", "bVII", "bVI", "V"], narrativeRoles: ["setup", "rising", "color", "climax"], tensions: [5, 6, 6, 9] },
+  ],
+  euphoric: [
+    { degrees: [1, 5, 6, 4], qualities: ["maj", "maj", "min", "maj"], functions: ["I", "V", "vi", "IV"], narrativeRoles: ["setup", "climax", "color", "resolution"], tensions: [1, 5, 3, 2] },
+    { degrees: [1, 4, 5, 4], qualities: ["maj", "maj", "dom", "maj"], functions: ["I", "IV", "V", "IV"], narrativeRoles: ["setup", "rising", "climax", "resolution"], tensions: [1, 3, 6, 2] },
+    { degrees: [4, 5, 6, 1], qualities: ["maj", "dom", "min", "maj"], functions: ["IV", "V", "vi", "I"], narrativeRoles: ["setup", "climax", "color", "resolution"], tensions: [3, 6, 3, 1] },
+    { degrees: [1, 3, 4, 5], qualities: ["maj", "maj", "maj", "dom"], functions: ["I", "III", "IV", "V"], narrativeRoles: ["setup", "color", "rising", "climax"], tensions: [1, 4, 3, 6] },
+  ],
+  contemplative: [
+    { degrees: [2, 5, 1, 6], qualities: ["min", "dom", "maj", "min"], functions: ["ii", "V", "I", "vi"], narrativeRoles: ["setup", "rising", "resolution", "color"], tensions: [3, 5, 1, 3] },
+    { degrees: [1, 4, 2, 5], qualities: ["maj", "maj", "min", "dom"], functions: ["I", "IV", "ii", "V"], narrativeRoles: ["setup", "color", "rising", "climax"], tensions: [1, 3, 4, 5] },
+    { degrees: [1, 6, 3, 4], qualities: ["maj", "min", "min", "maj"], functions: ["I", "vi", "iii", "IV"], narrativeRoles: ["setup", "color", "rising", "resolution"], tensions: [1, 3, 3, 2] },
+    { degrees: [6, 2, 5, 1], qualities: ["min", "min", "dom", "maj"], functions: ["vi", "ii", "V", "I"], narrativeRoles: ["setup", "rising", "climax", "resolution"], tensions: [3, 4, 6, 1] },
+  ],
+};
+
+const EMOTION_EXTENSIONS: Record<Emotion, Extension[]> = {
+  melancholic: ["min7", "9", "add9", "min9", "6", "maj7"],
+  triumphant: ["maj7", "9", "add9", "6/9", "sus", "13"],
+  mysterious: ["7b5", "7#5", "dim7", "m7b5", "7b9", "7#11"],
+  dreamy: ["maj9", "9", "add9", "6/9", "11", "maj7"],
+  aggressive: ["7", "7#9", "7b9", "alt", "9", "sus"],
+  tender: ["maj7", "add9", "6", "9", "maj9", "6/9"],
+  nostalgic: ["maj7", "9", "add9", "6", "7", "13"],
+  dark: ["m7b5", "dim7", "min7", "7b9", "7b5", "7#5"],
+  euphoric: ["maj7", "9", "add9", "11", "sus", "6/9"],
+  contemplative: ["min7", "maj7", "9", "11", "add9", "13"],
+};
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getExtensionForChord(emotion: Emotion, quality: ChordQuality): Extension | null {
+  if (Math.random() < 0.15) return null;
+
+  const pool = EMOTION_EXTENSIONS[emotion];
+  const ext = pickRandom(pool);
+
+  if (quality === "dim" && ["maj7", "9", "add9", "6/9", "maj9"].includes(ext)) {
+    return "dim7";
+  }
+  if (quality === "aug" && ["min7", "min9"].includes(ext)) {
+    return "7#5";
+  }
+
+  return ext;
+}
+
+export function formatChord(chord: ChordVoice): string {
+  let name = chord.root;
+  switch (chord.quality) {
+    case "min": name += "m"; break;
+    case "dim": name += "dim"; break;
+    case "aug": name += "aug"; break;
+    case "sus2": name += "sus2"; break;
+    case "sus4": name += "sus4"; break;
+    case "dom": break;
+    case "maj": break;
+  }
+  if (chord.extension) {
+    name += chord.extension;
+  }
+  return name;
+}
+
+export function generateProgression(emotion: Emotion, key: string): Progression {
+  const templates = EMOTION_PROGRESSIONS[emotion];
+  const template = pickRandom(templates);
+  const scale = SCALE_DEGREES[key];
+
+  const chords: ChordVoice[] = template.degrees.map((deg, i) => {
+    const rootIndex = (deg - 1) % 7;
+    const root = scale[rootIndex];
+    const quality = template.qualities[i];
+    const ext = getExtensionForChord(emotion, quality);
+
+    return {
+      root,
+      quality,
+      extension: ext,
+      function: template.functions[i],
+      tensionLevel: template.tensions[i],
+      narrativeRole: template.narrativeRoles[i],
+    };
+  });
+
+  return {
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    emotion,
+    key,
+    chords,
+    timestamp: Date.now(),
+    saved: false,
+  };
+}
+
+export const FLOW_CHART_NODES: FlowNode[] = [
+  {
+    id: "tonic",
+    label: "Tonic (I)",
+    role: "tonic",
+    description: "Home base. The center of gravity.",
+    narrativeFunction: "The narrator's resting voice. The opening line, the return home.",
+    voiceCharacter: "Stable, grounded. Use maj7 or add9 for warmth without tension.",
+    connections: ["subdominant", "mediant", "dominant", "chromatic"],
+    tensionLevel: 1,
+  },
+  {
+    id: "supertonic",
+    label: "Supertonic (ii)",
+    role: "subdominant",
+    description: "The gentle questioner. Pre-dominant motion.",
+    narrativeFunction: "The first departure. A thought begins to form, leaning forward.",
+    voiceCharacter: "Warm minor color. min7 or min9 for a reflective, searching quality.",
+    connections: ["dominant", "subdominant", "tonic"],
+    tensionLevel: 3,
+  },
+  {
+    id: "mediant",
+    label: "Mediant (iii)",
+    role: "tonic",
+    description: "The tonic's shadow. Related but distinct.",
+    narrativeFunction: "A shift in perspective. Same story, different angle. The aside.",
+    voiceCharacter: "Ambiguous minor. Use min7 to keep it floating, add9 for shimmer.",
+    connections: ["subdominant", "submediant", "dominant"],
+    tensionLevel: 2,
+  },
+  {
+    id: "subdominant",
+    label: "Subdominant (IV)",
+    role: "subdominant",
+    description: "The departure. Expansion away from home.",
+    narrativeFunction: "The narrative opens up. New scenery. The picture widens.",
+    voiceCharacter: "Bright and expansive. maj7 for beauty, add9 for nostalgia, sus for yearning.",
+    connections: ["dominant", "tonic", "supertonic", "chromatic"],
+    tensionLevel: 4,
+  },
+  {
+    id: "dominant",
+    label: "Dominant (V)",
+    role: "dominant",
+    description: "Maximum tension. The question demanding an answer.",
+    narrativeFunction: "The climax. Everything builds to this moment. The voice strains.",
+    voiceCharacter: "Tense, urgent. 7 for classic pull, 7b9 for dark drama, 7#9 for grit.",
+    connections: ["tonic", "submediant", "chromatic"],
+    tensionLevel: 8,
+  },
+  {
+    id: "submediant",
+    label: "Submediant (vi)",
+    role: "tonic",
+    description: "The deceptive rest. Tonic's melancholy twin.",
+    narrativeFunction: "The twist. You expected home but found something bittersweet instead.",
+    voiceCharacter: "Emotional minor. min7 for depth, min9 for tenderness, add9 for wistfulness.",
+    connections: ["supertonic", "subdominant", "dominant", "tonic"],
+    tensionLevel: 3,
+  },
+  {
+    id: "leading",
+    label: "Leading Tone (vii)",
+    role: "dominant",
+    description: "The edge of the cliff. Almost unbearable tension.",
+    narrativeFunction: "The breaking point. The voice cracks. Resolution is demanded.",
+    voiceCharacter: "Unstable, diminished. m7b5 for jazz, dim7 for classical drama.",
+    connections: ["tonic", "dominant"],
+    tensionLevel: 9,
+  },
+  {
+    id: "chromatic",
+    label: "Chromatic / Modal",
+    role: "chromatic",
+    description: "Outside the key. Borrowed colors and surprises.",
+    narrativeFunction: "A flash of something unexpected. A new picture entirely. The plot twist.",
+    voiceCharacter: "Exotic, altered. 7#11 for Lydian glow, alt for outside tension, b9 for darkness.",
+    connections: ["tonic", "subdominant", "dominant"],
+    tensionLevel: 7,
+  },
+];
+
+export const CONTINUANCE_ARCS = [
+  {
+    name: "Classic Narrative",
+    description: "Setup, development, climax, resolution. The universal story.",
+    path: ["tonic", "subdominant", "dominant", "tonic"],
+    voiceNotes: "Start grounded, expand, build tension, return home. The voice tells a complete story.",
+    pictureNotes: "Wide establishing shot, zoom in, close-up at peak, pull back to resolution.",
+  },
+  {
+    name: "Deceptive Journey",
+    description: "You think you're going home but the story takes a turn.",
+    path: ["tonic", "subdominant", "dominant", "submediant"],
+    voiceNotes: "The narration promises resolution but delivers emotional complexity instead.",
+    pictureNotes: "The image you expected dissolves into something more nuanced.",
+  },
+  {
+    name: "Circular Motion",
+    description: "Orbiting without landing. Suspension as narrative device.",
+    path: ["supertonic", "dominant", "supertonic", "dominant"],
+    voiceNotes: "The voice circles, never quite settling. Each repetition adds new meaning.",
+    pictureNotes: "A repeating motif that reveals new details each time through.",
+  },
+  {
+    name: "Descent",
+    description: "Chromatic falling. Each step pulls deeper.",
+    path: ["tonic", "leading", "submediant", "dominant"],
+    voiceNotes: "The narrator's voice lowers. Weight accumulates. Gravity takes over.",
+    pictureNotes: "Colors darken frame by frame. The picture descends into shadow.",
+  },
+  {
+    name: "Ascension",
+    description: "Building from nothing to everything.",
+    path: ["supertonic", "subdominant", "dominant", "tonic"],
+    voiceNotes: "The voice rises from quiet reflection to confident declaration.",
+    pictureNotes: "Dawn breaking. Each frame brighter than the last.",
+  },
+  {
+    name: "The Outsider",
+    description: "Chromatic intrusion disrupts the expected flow.",
+    path: ["tonic", "chromatic", "subdominant", "tonic"],
+    voiceNotes: "A foreign accent enters the conversation. The narration shifts register.",
+    pictureNotes: "A surreal frame breaks the realism, then the picture reassembles.",
+  },
+];
