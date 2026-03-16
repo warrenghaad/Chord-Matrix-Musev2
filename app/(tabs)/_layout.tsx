@@ -14,6 +14,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "dice", selected: "dice.fill" }} />
         <Label>Generate</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="story">
+        <Icon sf={{ default: "book", selected: "book.fill" }} />
+        <Label>Story</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="flow">
         <Icon sf={{ default: "arrow.triangle.branch", selected: "arrow.triangle.branch" }} />
         <Label>Flow</Label>
@@ -65,6 +69,15 @@ function ClassicTabLayout() {
           title: "Generate",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="dice-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="story"
+        options={{
+          title: "Story",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book-outline" size={size} color={color} />
           ),
         }}
       />

@@ -18,6 +18,7 @@ ChordFlow is an Expo React Native mobile app that generates emotion-driven chord
 - `components/FlowChart.tsx` - Flow chart of continuance with chord functions and narrative arcs
 - `components/SavedProgressions.tsx` - Saved progression list
 - `app/(tabs)/index.tsx` - Generate screen (main randomizer)
+- `app/(tabs)/story.tsx` - Story Progression screen (emotion order filter)
 - `app/(tabs)/flow.tsx` - Flow of Continuance screen
 - `app/(tabs)/saved.tsx` - Saved progressions screen
 
@@ -29,6 +30,13 @@ ChordFlow is an Expo React Native mobile app that generates emotion-driven chord
 - Solo extensions guide with playing hints
 - Flow chart showing chord function relationships (tonic, subdominant, dominant, chromatic)
 - 6 arcs of continuance with narration/voice/picture descriptions
+- Emotion Order Filter Story Progression (Story tab):
+  - 8 preset story arc templates (Hero's Journey, Tragedy, Rise & Fall, Romance, Redemption, Fever Dream, Coming of Age, Descent & Return)
+  - Custom mode: build your own emotion sequence (2-8 emotions, reorderable)
+  - Each emotion becomes a chapter with its own chord progression
+  - Tension arc visualization showing story shape
+  - Expandable chapter cards with chord details
+  - Story roles auto-assigned (Opening, Development, Tension, Climax, Falling, Resolution)
 - Save/delete favorite progressions
 
 ## Workflows

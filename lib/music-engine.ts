@@ -339,6 +339,203 @@ export const FLOW_CHART_NODES: FlowNode[] = [
   },
 ];
 
+export interface StoryChapter {
+  emotion: Emotion;
+  storyRole: "opening" | "development" | "tension" | "climax" | "falling" | "resolution" | "epilogue";
+  chapterTitle: string;
+  narrativeDescription: string;
+  progression: Progression | null;
+}
+
+export interface StoryArc {
+  id: string;
+  name: string;
+  description: string;
+  emotionOrder: Emotion[];
+  storyRoles: StoryChapter["storyRole"][];
+  chapterTitles: string[];
+  narrativeDescriptions: string[];
+}
+
+export const STORY_ARC_TEMPLATES: StoryArc[] = [
+  {
+    id: "heros-journey",
+    name: "Hero's Journey",
+    description: "From humble beginnings through trials to triumphant victory.",
+    emotionOrder: ["contemplative", "dreamy", "mysterious", "aggressive", "triumphant"],
+    storyRoles: ["opening", "development", "tension", "climax", "resolution"],
+    chapterTitles: ["The Call", "The Threshold", "The Unknown", "The Ordeal", "The Return"],
+    narrativeDescriptions: [
+      "A quiet moment of reflection before the journey begins.",
+      "Crossing into a new world, leaving the familiar behind.",
+      "Navigating uncertainty, encountering the strange and unfamiliar.",
+      "The decisive battle. Everything is at stake.",
+      "Victory achieved. The hero returns transformed.",
+    ],
+  },
+  {
+    id: "tragedy",
+    name: "Tragedy",
+    description: "Beauty dissolves into darkness. What was bright grows dim.",
+    emotionOrder: ["tender", "nostalgic", "melancholic", "dark", "contemplative"],
+    storyRoles: ["opening", "development", "tension", "climax", "resolution"],
+    chapterTitles: ["Innocence", "Memory", "The Unraveling", "The Abyss", "Acceptance"],
+    narrativeDescriptions: [
+      "A gentle beginning full of warmth and hope.",
+      "Looking back at what was, sensing it slipping away.",
+      "The cracks deepen. What was whole begins to break.",
+      "The lowest point. Surrounded by weight and shadow.",
+      "A quiet understanding emerges from the wreckage.",
+    ],
+  },
+  {
+    id: "rise-and-fall",
+    name: "Rise & Fall",
+    description: "Ascending to euphoria, then crashing back to earth.",
+    emotionOrder: ["melancholic", "mysterious", "euphoric", "aggressive", "melancholic"],
+    storyRoles: ["opening", "development", "climax", "falling", "resolution"],
+    chapterTitles: ["The Longing", "The Spark", "The Summit", "The Crash", "The Echo"],
+    narrativeDescriptions: [
+      "Starting from a place of yearning and desire.",
+      "Something ignites — curiosity, possibility, a door opening.",
+      "The peak. Pure elation. Everything aligns.",
+      "The fall is sudden and violent. The world tears apart.",
+      "Back where you started, but changed by the journey.",
+    ],
+  },
+  {
+    id: "romance",
+    name: "Romance",
+    description: "Meeting, falling, surrendering, remembering.",
+    emotionOrder: ["dreamy", "tender", "euphoric", "nostalgic", "tender"],
+    storyRoles: ["opening", "development", "climax", "falling", "resolution"],
+    chapterTitles: ["First Sight", "Drawing Close", "The Crescendo", "Bittersweet", "Still Here"],
+    narrativeDescriptions: [
+      "The world softens. Something catches your eye.",
+      "Walls come down. Vulnerability becomes beauty.",
+      "Overwhelming joy. Two become one for a moment.",
+      "Time passes. The glow settles into warm memory.",
+      "What remains is gentle, steady, and real.",
+    ],
+  },
+  {
+    id: "redemption",
+    name: "Redemption",
+    description: "From the deepest dark, climbing toward light and triumph.",
+    emotionOrder: ["dark", "aggressive", "contemplative", "melancholic", "triumphant"],
+    storyRoles: ["opening", "tension", "development", "falling", "resolution"],
+    chapterTitles: ["The Pit", "The Struggle", "The Reckoning", "The Wound", "The Dawn"],
+    narrativeDescriptions: [
+      "Trapped in shadow with no visible escape.",
+      "Fighting against the darkness with raw, desperate energy.",
+      "Pausing to understand what led here. Searching for meaning.",
+      "Acknowledging the pain. Letting the wound breathe.",
+      "Rising at last. Stronger for having been broken.",
+    ],
+  },
+  {
+    id: "fever-dream",
+    name: "Fever Dream",
+    description: "Reality bends. Nothing is quite what it seems.",
+    emotionOrder: ["mysterious", "dreamy", "dark", "euphoric", "mysterious"],
+    storyRoles: ["opening", "development", "tension", "climax", "resolution"],
+    chapterTitles: ["The Distortion", "The Float", "The Nightmare", "The Vision", "The Question"],
+    narrativeDescriptions: [
+      "Something is off. The familiar becomes strange.",
+      "Drifting through a landscape that shifts and shimmers.",
+      "The dream turns. Shadows press in from every side.",
+      "A blinding moment of clarity inside the chaos.",
+      "Waking, but unsure of what was real.",
+    ],
+  },
+  {
+    id: "coming-of-age",
+    name: "Coming of Age",
+    description: "Growing from wonder through struggle into self-knowledge.",
+    emotionOrder: ["dreamy", "euphoric", "aggressive", "melancholic", "contemplative"],
+    storyRoles: ["opening", "development", "tension", "falling", "resolution"],
+    chapterTitles: ["Wide Eyes", "The Rush", "The Test", "The Loss", "Understanding"],
+    narrativeDescriptions: [
+      "Everything is new and full of possibility.",
+      "The thrill of discovering what you can do.",
+      "The world pushes back. Not everything bends to will.",
+      "Something important is lost. The weight is felt.",
+      "Wisdom arrives quietly, earned through experience.",
+    ],
+  },
+  {
+    id: "descent-return",
+    name: "Descent & Return",
+    description: "Spiraling inward to find what was hidden, then emerging.",
+    emotionOrder: ["contemplative", "nostalgic", "dark", "mysterious", "euphoric"],
+    storyRoles: ["opening", "development", "climax", "falling", "resolution"],
+    chapterTitles: ["The Stillness", "The Memory Gate", "The Depths", "The Discovery", "The Emergence"],
+    narrativeDescriptions: [
+      "A quiet turning inward. The surface grows distant.",
+      "Revisiting what was left behind. Old doors open.",
+      "The deepest point. Surrounded by the unknown self.",
+      "Finding something unexpected in the dark.",
+      "Breaking through to the surface, carrying treasure.",
+    ],
+  },
+];
+
+export const STORY_ROLE_META: Record<StoryChapter["storyRole"], { label: string; color: string; icon: string }> = {
+  opening: { label: "Opening", color: "#0EA5E9", icon: "sunrise" },
+  development: { label: "Development", color: "#10B981", icon: "trending-up" },
+  tension: { label: "Tension", color: "#F59E0B", icon: "alert-triangle" },
+  climax: { label: "Climax", color: "#EF4444", icon: "zap" },
+  falling: { label: "Falling Action", color: "#F97316", icon: "trending-down" },
+  resolution: { label: "Resolution", color: "#8B5CF6", icon: "check-circle" },
+  epilogue: { label: "Epilogue", color: "#64748B", icon: "book" },
+};
+
+export function generateStoryProgression(arc: StoryArc, key: string): StoryChapter[] {
+  return arc.emotionOrder.map((emotion, i) => ({
+    emotion,
+    storyRole: arc.storyRoles[i],
+    chapterTitle: arc.chapterTitles[i],
+    narrativeDescription: arc.narrativeDescriptions[i],
+    progression: generateProgression(emotion, key),
+  }));
+}
+
+export function generateCustomStoryProgression(
+  emotions: Emotion[],
+  key: string
+): StoryChapter[] {
+  const roleSequence: StoryChapter["storyRole"][] = (() => {
+    const len = emotions.length;
+    if (len === 1) return ["opening"];
+    if (len === 2) return ["opening", "resolution"];
+    if (len === 3) return ["opening", "climax", "resolution"];
+    if (len === 4) return ["opening", "development", "climax", "resolution"];
+    if (len === 5) return ["opening", "development", "climax", "falling", "resolution"];
+    const roles: StoryChapter["storyRole"][] = ["opening"];
+    for (let i = 1; i < len - 1; i++) {
+      const progress = i / (len - 1);
+      if (progress < 0.3) roles.push("development");
+      else if (progress < 0.5) roles.push("tension");
+      else if (progress < 0.6) roles.push("climax");
+      else if (progress < 0.8) roles.push("falling");
+      else roles.push("development");
+    }
+    roles.push("resolution");
+    return roles;
+  })();
+
+  return emotions.map((emotion, i) => {
+    const emotionData = EMOTIONS.find((e) => e.id === emotion)!;
+    return {
+      emotion,
+      storyRole: roleSequence[i],
+      chapterTitle: `Ch. ${i + 1}: ${emotionData.label}`,
+      narrativeDescription: `The story moves through ${emotionData.description.toLowerCase()}.`,
+      progression: generateProgression(emotion, key),
+    };
+  });
+}
+
 export const CONTINUANCE_ARCS = [
   {
     name: "Classic Narrative",
