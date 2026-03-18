@@ -175,6 +175,195 @@ const EMOTION_PROGRESSIONS: Record<Emotion, ProgressionTemplate[]> = {
   ],
 };
 
+export interface ExtensionMeta {
+  extension: Extension;
+  emotionalPlace: string;
+  resolutionGuidance: string;
+  tensionModifier: number;
+  narrativeEffect: string;
+  colorFamily: "warm" | "cool" | "dark" | "bright" | "neutral";
+}
+
+export const EXTENSION_META: Record<Extension, ExtensionMeta> = {
+  "7": {
+    extension: "7",
+    emotionalPlace: "Dominant pull. The question that demands an answer.",
+    resolutionGuidance: "Resolve down a fifth to the tonic, or deceptively to vi. The b7 wants to fall to the 3rd of the target.",
+    tensionModifier: 2,
+    narrativeEffect: "Creates forward momentum. The story can't stay here.",
+    colorFamily: "warm",
+  },
+  "maj7": {
+    extension: "maj7",
+    emotionalPlace: "Luminous stillness. Beauty without urgency.",
+    resolutionGuidance: "Can sustain without resolving. If moving, step to IV or drift to vi for gentle motion. The maj7 floats.",
+    tensionModifier: 0,
+    narrativeEffect: "The narrator pauses to describe the light in the room.",
+    colorFamily: "bright",
+  },
+  "min7": {
+    extension: "min7",
+    emotionalPlace: "Gentle sorrow. Reflective depth without despair.",
+    resolutionGuidance: "Move to a dominant chord (V7) or step down to bVI. The minor 7th softens any arrival.",
+    tensionModifier: 1,
+    narrativeEffect: "The character looks inward. Memory surfaces.",
+    colorFamily: "cool",
+  },
+  "9": {
+    extension: "9",
+    emotionalPlace: "Open space. The horizon widens.",
+    resolutionGuidance: "Resolve like a 7th chord but with more color. The 9th adds air — let it breathe before moving.",
+    tensionModifier: 2,
+    narrativeEffect: "The picture pulls back. We see more of the world.",
+    colorFamily: "warm",
+  },
+  "maj9": {
+    extension: "maj9",
+    emotionalPlace: "Dreaming with eyes open. Crystalline and suspended.",
+    resolutionGuidance: "Float to another maj9 or step gently to IV. Avoid harsh resolution — this chord is its own destination.",
+    tensionModifier: 0,
+    narrativeEffect: "Time slows. Every detail becomes vivid.",
+    colorFamily: "bright",
+  },
+  "min9": {
+    extension: "min9",
+    emotionalPlace: "Deep tenderness. Vulnerability held gently.",
+    resolutionGuidance: "Move to IV or bVI for warmth, or to V7 for bittersweet departure. The 9th over minor is fragile — handle softly.",
+    tensionModifier: 1,
+    narrativeEffect: "The voice drops to a whisper. Something intimate is shared.",
+    colorFamily: "cool",
+  },
+  "11": {
+    extension: "11",
+    emotionalPlace: "Suspended between worlds. Neither here nor there.",
+    resolutionGuidance: "The 11th wants to fall to the 3rd — resolve inward, or sustain for ambiguity. Works as a plateau before descent.",
+    tensionModifier: 2,
+    narrativeEffect: "The story holds its breath. A decision hangs in the air.",
+    colorFamily: "neutral",
+  },
+  "13": {
+    extension: "13",
+    emotionalPlace: "Richness and fullness. Every voice speaks at once.",
+    resolutionGuidance: "Can resolve like a dominant 7th but with more ceremony. The 13th adds brightness to the arrival.",
+    tensionModifier: 2,
+    narrativeEffect: "The orchestra swells. All threads converge.",
+    colorFamily: "warm",
+  },
+  "add9": {
+    extension: "add9",
+    emotionalPlace: "Innocence with a shimmer. Simple beauty, slight sparkle.",
+    resolutionGuidance: "Resolves naturally anywhere a triad would. The 9th is decoration — it follows the root chord's gravity.",
+    tensionModifier: 0,
+    narrativeEffect: "Sunlight through a window. The ordinary becomes beautiful.",
+    colorFamily: "bright",
+  },
+  "6": {
+    extension: "6",
+    emotionalPlace: "Warmth and nostalgia. A vintage sweetness.",
+    resolutionGuidance: "Acts as a soft tonic. Can sustain as a resting point, or move to ii for a classic departure.",
+    tensionModifier: 0,
+    narrativeEffect: "A photograph from another time. Familiar and comforting.",
+    colorFamily: "warm",
+  },
+  "min6": {
+    extension: "min6",
+    emotionalPlace: "Dorian color. Minor with an unexpected warmth.",
+    resolutionGuidance: "The natural 6 over minor creates Dorian mode. Move to V7 or bVII. The warmth in the darkness wants to resolve upward.",
+    tensionModifier: 1,
+    narrativeEffect: "Hope found in an unexpected place. Light in shadow.",
+    colorFamily: "cool",
+  },
+  "7b5": {
+    extension: "7b5",
+    emotionalPlace: "Locrian void. The ground shifts beneath you.",
+    resolutionGuidance: "The tritone from the root creates maximum instability. Resolve down a half-step or up a fourth. Needs strong resolution.",
+    tensionModifier: 4,
+    narrativeEffect: "Reality fractures. What seemed solid is not.",
+    colorFamily: "dark",
+  },
+  "7#5": {
+    extension: "7#5",
+    emotionalPlace: "Augmented tension. The world stretches beyond its frame.",
+    resolutionGuidance: "Resolve up a half-step or down a fifth. The #5 pulls outward — answer it with inward motion.",
+    tensionModifier: 3,
+    narrativeEffect: "Something is wrong in a beautiful way. The uncanny valley.",
+    colorFamily: "dark",
+  },
+  "7b9": {
+    extension: "7b9",
+    emotionalPlace: "Dark drama. The minor 9th interval is pure anguish.",
+    resolutionGuidance: "Resolve strongly down a fifth to minor. This is the darkest dominant — it needs a definitive answer. Use harmonic minor resolution.",
+    tensionModifier: 4,
+    narrativeEffect: "The villain appears. The storm breaks. No escape.",
+    colorFamily: "dark",
+  },
+  "7#9": {
+    extension: "7#9",
+    emotionalPlace: "The Hendrix chord. Blues-rock grit and defiance.",
+    resolutionGuidance: "Can resolve down a fifth or sustain as a blues tonic. The clash of major and minor 3rd is the sound of resistance.",
+    tensionModifier: 3,
+    narrativeEffect: "The character fights back. Raw energy against the world.",
+    colorFamily: "warm",
+  },
+  "7#11": {
+    extension: "7#11",
+    emotionalPlace: "Lydian dominant. Bright but otherworldly.",
+    resolutionGuidance: "Resolve down a half-step for tritone substitution, or sustain for Lydian brightness. The #11 floats above reality.",
+    tensionModifier: 2,
+    narrativeEffect: "A door opens to somewhere impossible. Beautiful strangeness.",
+    colorFamily: "bright",
+  },
+  "dim7": {
+    extension: "dim7",
+    emotionalPlace: "Symmetrical anxiety. Every note is equidistant. No home.",
+    resolutionGuidance: "Resolve up or down a half-step to a major or minor chord. Any of the 4 notes can be a leading tone — choose your destination.",
+    tensionModifier: 5,
+    narrativeEffect: "Vertigo. The compass spins. Every direction looks the same.",
+    colorFamily: "dark",
+  },
+  "m7b5": {
+    extension: "m7b5",
+    emotionalPlace: "Half-diminished. The gateway between worlds.",
+    resolutionGuidance: "Resolve to V7b9 then to i for a complete minor ii-V-i. This chord is the question before the darker question.",
+    tensionModifier: 3,
+    narrativeEffect: "Standing at a threshold. The passage narrows ahead.",
+    colorFamily: "dark",
+  },
+  "alt": {
+    extension: "alt",
+    emotionalPlace: "All tensions raised or lowered. Complete chromatic saturation.",
+    resolutionGuidance: "Resolve down a fifth to major or minor. The altered scale provides maximum departure — the return must be decisive.",
+    tensionModifier: 5,
+    narrativeEffect: "Everything at once. Sensory overload. The climax of chaos.",
+    colorFamily: "dark",
+  },
+  "sus": {
+    extension: "sus",
+    emotionalPlace: "No 3rd. Pure ambiguity. Neither major nor minor.",
+    resolutionGuidance: "Resolve the 4th down to the 3rd (sus4 to major). Or sustain the suspension — let the ambiguity become the statement.",
+    tensionModifier: 1,
+    narrativeEffect: "The character stands at the crossroads. The choice hasn't been made.",
+    colorFamily: "neutral",
+  },
+  "6/9": {
+    extension: "6/9",
+    emotionalPlace: "Complete and warm. The perfect ending chord.",
+    resolutionGuidance: "This IS the resolution. A 6/9 chord needs nothing after it. Use as a final destination or a peaceful plateau.",
+    tensionModifier: -1,
+    narrativeEffect: "The story ends. The credits roll. Everything is where it should be.",
+    colorFamily: "warm",
+  },
+};
+
+export function getExtensionsForEmotion(emotion: Emotion): ExtensionMeta[] {
+  const pool = EMOTION_EXTENSIONS[emotion];
+  return pool.map((ext) => EXTENSION_META[ext]);
+}
+
+export function getAllExtensionMetas(): ExtensionMeta[] {
+  return Object.values(EXTENSION_META);
+}
+
 const EMOTION_EXTENSIONS: Record<Emotion, Extension[]> = {
   melancholic: ["min7", "9", "add9", "min9", "6", "maj7"],
   triumphant: ["maj7", "9", "add9", "6/9", "sus", "13"],

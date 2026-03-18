@@ -33,6 +33,12 @@ import {
   generateStoryProgression,
   generateCustomStoryProgression,
   formatChord,
+  Extension,
+  EXTENSION_META,
+  ExtensionMeta,
+  getExtensionsForEmotion,
+  getAllExtensionMetas,
+  ChordVoice,
 } from "@/lib/music-engine";
 
 const STORAGE_KEY = "@chordflow_saved";
@@ -63,6 +69,7 @@ export default function StoryScreen() {
   const [customEmotions, setCustomEmotions] = useState<Emotion[]>([]);
   const [chapters, setChapters] = useState<StoryChapter[] | null>(null);
   const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
+  const [activeExtPicker, setActiveExtPicker] = useState<string | null>(null);
 
   const generateScale = useSharedValue(1);
   const generateAnimStyle = useAnimatedStyle(() => ({
@@ -111,6 +118,32 @@ export default function StoryScreen() {
       setChapters(null);
     },
     [customEmotions]
+  );
+
+  const handleExtensionChange = useCallback(
+    (chapterIndex: number, chordIndex: number, newExtension: Extension | null) => {
+      if (!chapters) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const updated = chapters.map((ch, ci) => {
+        if (ci !== chapterIndex || !ch.progression) return ch;
+        const updatedChords = ch.progression.chords.map((chord, cdi) => {
+          if (cdi !== chordIndex) return chord;
+          const meta = newExtension ? EXTENSION_META[newExtension] : null;
+          const baseTension = chord.tensionLevel - (chord.extension ? (EXTENSION_META[chord.extension]?.tensionModifier || 0) : 0);
+          return {
+            ...chord,
+            extension: newExtension,
+            tensionLevel: Math.max(1, Math.min(10, baseTension + (meta?.tensionModifier || 0))),
+          };
+        });
+        return {
+          ...ch,
+          progression: { ...ch.progression, chords: updatedChords },
+        };
+      });
+      setChapters(updated);
+    },
+    [chapters]
   );
 
   const handleGenerate = useCallback(() => {
@@ -438,6 +471,13 @@ export default function StoryScreen() {
                 onToggle={() =>
                   setExpandedChapter(expandedChapter === i ? null : i)
                 }
+                activeExtPicker={activeExtPicker}
+                onToggleExtPicker={(pickerId) =>
+                  setActiveExtPicker(activeExtPicker === pickerId ? null : pickerId)
+                }
+                onExtensionChange={(chordIndex, ext) =>
+                  handleExtensionChange(i, chordIndex, ext)
+                }
               />
             ))}
           </Animated.View>
@@ -565,23 +605,40 @@ function StoryTimeline({ chapters }: { chapters: StoryChapter[] }) {
   );
 }
 
+const COLOR_FAMILY_COLORS: Record<string, string> = {
+  warm: "#F59E0B",
+  cool: "#0EA5E9",
+  dark: "#8B5CF6",
+  bright: "#10B981",
+  neutral: "#64748B",
+};
+
 function ChapterCard({
   chapter,
   index,
   total,
   isExpanded,
   onToggle,
+  activeExtPicker,
+  onToggleExtPicker,
+  onExtensionChange,
 }: {
   chapter: StoryChapter;
   index: number;
   total: number;
   isExpanded: boolean;
   onToggle: () => void;
+  activeExtPicker: string | null;
+  onToggleExtPicker: (pickerId: string) => void;
+  onExtensionChange: (chordIndex: number, ext: Extension | null) => void;
 }) {
   const { palette } = Colors;
   const emotionData = EMOTIONS.find((e) => e.id === chapter.emotion)!;
   const roleMeta = STORY_ROLE_META[chapter.storyRole];
   const prog = chapter.progression;
+
+  const emotionExtensions = getExtensionsForEmotion(chapter.emotion);
+  const allExtensions = getAllExtensionMetas();
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 80).duration(250)}>
@@ -653,6 +710,9 @@ function ChapterCard({
             {isExpanded && prog && (
               <Animated.View entering={FadeIn.duration(200)} style={styles.chapterExpanded}>
                 {prog.chords.map((chord, ci) => {
+                  const pickerId = `${index}-${ci}`;
+                  const isPickerOpen = activeExtPicker === pickerId;
+                  const currentMeta = chord.extension ? EXTENSION_META[chord.extension] : null;
                   const roles: Record<string, string> = {
                     setup: "establishes the mood",
                     rising: "builds tension",
@@ -687,6 +747,7 @@ function ChapterCard({
                           {chord.function}
                         </Text>
                       </View>
+
                       <View style={styles.expandedTensionRow}>
                         <View
                           style={[
@@ -718,6 +779,7 @@ function ChapterCard({
                           T:{chord.tensionLevel}
                         </Text>
                       </View>
+
                       <Text
                         style={[
                           styles.expandedChordRole,
@@ -726,6 +788,196 @@ function ChapterCard({
                       >
                         {roles[chord.narrativeRole]}
                       </Text>
+
+                      {currentMeta && (
+                        <View style={[styles.extMetaBox, { borderColor: COLOR_FAMILY_COLORS[currentMeta.colorFamily] + "33" }]}>
+                          <View style={styles.extMetaRow}>
+                            <Feather name="map-pin" size={11} color={COLOR_FAMILY_COLORS[currentMeta.colorFamily]} />
+                            <Text style={[styles.extMetaLabel, { color: COLOR_FAMILY_COLORS[currentMeta.colorFamily] }]}>
+                              Emotional Place
+                            </Text>
+                          </View>
+                          <Text style={[styles.extMetaText, { color: palette.textSecondary }]}>
+                            {currentMeta.emotionalPlace}
+                          </Text>
+                          <View style={styles.extMetaRow}>
+                            <Feather name="compass" size={11} color={palette.amber} />
+                            <Text style={[styles.extMetaLabel, { color: palette.amber }]}>
+                              Resolution
+                            </Text>
+                          </View>
+                          <Text style={[styles.extMetaText, { color: palette.textSecondary }]}>
+                            {currentMeta.resolutionGuidance}
+                          </Text>
+                          <View style={styles.extMetaRow}>
+                            <Feather name="feather" size={11} color="#EC4899" />
+                            <Text style={[styles.extMetaLabel, { color: "#EC4899" }]}>
+                              Narrative Effect
+                            </Text>
+                          </View>
+                          <Text style={[styles.extMetaText, { color: palette.textSecondary }]}>
+                            {currentMeta.narrativeEffect}
+                          </Text>
+                        </View>
+                      )}
+
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          onToggleExtPicker(pickerId);
+                        }}
+                        style={[
+                          styles.extPickerToggle,
+                          {
+                            backgroundColor: isPickerOpen ? palette.amber + "18" : palette.slate,
+                            borderColor: isPickerOpen ? palette.amber + "44" : palette.cardBorder,
+                          },
+                        ]}
+                      >
+                        <Feather
+                          name="sliders"
+                          size={13}
+                          color={isPickerOpen ? palette.amber : palette.textMuted}
+                        />
+                        <Text
+                          style={[
+                            styles.extPickerToggleText,
+                            { color: isPickerOpen ? palette.amber : palette.textSecondary },
+                          ]}
+                        >
+                          {isPickerOpen ? "Close Nuance" : "Shape Nuance"}
+                        </Text>
+                        <Feather
+                          name={isPickerOpen ? "chevron-up" : "chevron-down"}
+                          size={13}
+                          color={isPickerOpen ? palette.amber : palette.textMuted}
+                        />
+                      </Pressable>
+
+                      {isPickerOpen && (
+                        <Animated.View entering={FadeIn.duration(200)} style={styles.extPickerPanel}>
+                          <Text style={[styles.extPickerSectionLabel, { color: emotionData.color }]}>
+                            Suggested for {emotionData.label}
+                          </Text>
+                          <View style={styles.extPickerChips}>
+                            <Pressable
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                onExtensionChange(ci, null);
+                              }}
+                              style={[
+                                styles.extChip,
+                                {
+                                  backgroundColor: !chord.extension ? palette.amber + "22" : palette.slate,
+                                  borderColor: !chord.extension ? palette.amber : palette.cardBorder,
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.extChipText,
+                                  { color: !chord.extension ? palette.amber : palette.textMuted },
+                                ]}
+                              >
+                                None
+                              </Text>
+                            </Pressable>
+                            {emotionExtensions.map((meta) => {
+                              const isActive = chord.extension === meta.extension;
+                              const familyColor = COLOR_FAMILY_COLORS[meta.colorFamily];
+                              return (
+                                <Pressable
+                                  key={meta.extension}
+                                  onPress={(e) => {
+                                    e.stopPropagation();
+                                    onExtensionChange(ci, meta.extension);
+                                  }}
+                                  style={[
+                                    styles.extChip,
+                                    {
+                                      backgroundColor: isActive ? familyColor + "22" : palette.slate,
+                                      borderColor: isActive ? familyColor : palette.cardBorder,
+                                    },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.extChipText,
+                                      { color: isActive ? familyColor : palette.textSecondary },
+                                    ]}
+                                  >
+                                    {meta.extension}
+                                  </Text>
+                                  <View style={[styles.extChipTensionDot, {
+                                    backgroundColor: meta.tensionModifier >= 4 ? "#EF4444"
+                                      : meta.tensionModifier >= 2 ? palette.amber
+                                      : "#10B981",
+                                  }]} />
+                                </Pressable>
+                              );
+                            })}
+                          </View>
+
+                          <Text style={[styles.extPickerSectionLabel, { color: palette.textMuted, marginTop: 8 }]}>
+                            All Extensions
+                          </Text>
+                          <View style={styles.extPickerChips}>
+                            {allExtensions
+                              .filter((m) => !emotionExtensions.find((e) => e.extension === m.extension))
+                              .map((meta) => {
+                                const isActive = chord.extension === meta.extension;
+                                const familyColor = COLOR_FAMILY_COLORS[meta.colorFamily];
+                                return (
+                                  <Pressable
+                                    key={meta.extension}
+                                    onPress={(e) => {
+                                      e.stopPropagation();
+                                      onExtensionChange(ci, meta.extension);
+                                    }}
+                                    style={[
+                                      styles.extChip,
+                                      {
+                                        backgroundColor: isActive ? familyColor + "22" : palette.slate,
+                                        borderColor: isActive ? familyColor : palette.cardBorder,
+                                      },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.extChipText,
+                                        { color: isActive ? familyColor : palette.textMuted },
+                                      ]}
+                                    >
+                                      {meta.extension}
+                                    </Text>
+                                    <View style={[styles.extChipTensionDot, {
+                                      backgroundColor: meta.tensionModifier >= 4 ? "#EF4444"
+                                        : meta.tensionModifier >= 2 ? palette.amber
+                                        : "#10B981",
+                                    }]} />
+                                  </Pressable>
+                                );
+                              })}
+                          </View>
+
+                          {chord.extension && EXTENSION_META[chord.extension] && (
+                            <View style={[styles.extPickerDetail, { borderColor: COLOR_FAMILY_COLORS[EXTENSION_META[chord.extension].colorFamily] + "33" }]}>
+                              <View style={[styles.extPickerDetailHeader, { backgroundColor: COLOR_FAMILY_COLORS[EXTENSION_META[chord.extension].colorFamily] + "12" }]}>
+                                <Text style={[styles.extPickerDetailName, { color: COLOR_FAMILY_COLORS[EXTENSION_META[chord.extension].colorFamily] }]}>
+                                  {chord.extension}
+                                </Text>
+                                <View style={[styles.extFamilyBadge, { backgroundColor: COLOR_FAMILY_COLORS[EXTENSION_META[chord.extension].colorFamily] + "22" }]}>
+                                  <Text style={[styles.extFamilyText, { color: COLOR_FAMILY_COLORS[EXTENSION_META[chord.extension].colorFamily] }]}>
+                                    {EXTENSION_META[chord.extension].colorFamily}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                          )}
+                        </Animated.View>
+                      )}
+
                       <FretboardDiagram
                         root={chord.root}
                         quality={chord.quality}
@@ -1092,5 +1344,108 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "SpaceMono_400Regular",
     fontStyle: "italic",
+  },
+  extMetaBox: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    gap: 4,
+    marginTop: 4,
+  },
+  extMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 4,
+  },
+  extMetaLabel: {
+    fontSize: 13,
+    fontFamily: "SpaceMono_700Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  extMetaText: {
+    fontSize: 14,
+    fontFamily: "SpaceMono_400Regular",
+    lineHeight: 20,
+    paddingLeft: 16,
+  },
+  extPickerToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 6,
+  },
+  extPickerToggleText: {
+    fontSize: 13,
+    fontFamily: "SpaceMono_700Bold",
+    letterSpacing: 0.3,
+  },
+  extPickerPanel: {
+    paddingTop: 8,
+    gap: 4,
+  },
+  extPickerSectionLabel: {
+    fontSize: 12,
+    fontFamily: "SpaceMono_700Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  extPickerChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  extChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 7,
+    borderWidth: 1,
+  },
+  extChipText: {
+    fontSize: 13,
+    fontFamily: "JetBrainsMono_700Bold",
+  },
+  extChipTensionDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  extPickerDetail: {
+    borderWidth: 1,
+    borderRadius: 8,
+    overflow: "hidden",
+    marginTop: 8,
+  },
+  extPickerDetailHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  extPickerDetailName: {
+    fontSize: 16,
+    fontFamily: "JetBrainsMono_700Bold",
+  },
+  extFamilyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  extFamilyText: {
+    fontSize: 11,
+    fontFamily: "SpaceMono_700Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
 });
