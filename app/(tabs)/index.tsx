@@ -29,6 +29,7 @@ import {
 import EmotionGrid from "@/components/EmotionGrid";
 import KeySelector from "@/components/KeySelector";
 import ChordCard from "@/components/ChordCard";
+import FretboardDiagram from "@/components/FretboardDiagram";
 
 const STORAGE_KEY = "@chordflow_saved";
 
@@ -273,6 +274,34 @@ export default function GenerateScreen() {
                   </View>
                 ))}
             </View>
+
+            <View style={[styles.fretboardSection, { backgroundColor: palette.deepNavy, borderColor: palette.cardBorder }]}>
+              <View style={styles.narrativeHeader}>
+                <Feather name="grid" size={14} color="#10B981" />
+                <Text style={[styles.narrativeTitle, { color: "#10B981" }]}>
+                  Fretboard Diagrams
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.fretboardRow}
+              >
+                {currentProgression.chords.map((c, i) => (
+                  <View key={i} style={styles.fretboardItem}>
+                    <Text style={[styles.fretboardChordLabel, { color: palette.textPrimary }]}>
+                      {formatChord(c)}
+                    </Text>
+                    <FretboardDiagram
+                      root={c.root}
+                      quality={c.quality}
+                      extension={c.extension}
+                      chordName={formatChord(c)}
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
           </Animated.View>
         )}
       </ScrollView>
@@ -416,5 +445,24 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceMono_400Regular",
     lineHeight: 17,
     flex: 1,
+  },
+  fretboardSection: {
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    gap: 10,
+  },
+  fretboardRow: {
+    flexDirection: "row",
+    gap: 12,
+    paddingVertical: 4,
+  },
+  fretboardItem: {
+    alignItems: "center",
+    gap: 6,
+  },
+  fretboardChordLabel: {
+    fontSize: 14,
+    fontFamily: "JetBrainsMono_700Bold",
   },
 });

@@ -37,6 +37,7 @@ ChordFlow is an Expo React Native mobile app that generates emotion-driven chord
   - Tension arc visualization showing story shape
   - Expandable chapter cards with chord details
   - Story roles auto-assigned (Opening, Development, Tension, Climax, Falling, Resolution)
+- Fretboard diagrams for every chord (Generate tab horizontal scroll + Story tab expanded chapters)
 - Save/delete favorite progressions
 
 ## Workflows

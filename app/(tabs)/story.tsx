@@ -22,6 +22,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import KeySelector from "@/components/KeySelector";
+import FretboardDiagram from "@/components/FretboardDiagram";
 import {
   Emotion,
   EMOTIONS,
@@ -725,6 +726,12 @@ function ChapterCard({
                       >
                         {roles[chord.narrativeRole]}
                       </Text>
+                      <FretboardDiagram
+                        root={chord.root}
+                        quality={chord.quality}
+                        extension={chord.extension}
+                        chordName={formatChord(chord)}
+                      />
                     </View>
                   );
                 })}
