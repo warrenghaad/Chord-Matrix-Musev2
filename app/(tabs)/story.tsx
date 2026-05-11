@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import KeySelector from "@/components/KeySelector";
 import FretboardDiagram from "@/components/FretboardDiagram";
+import AlphaTabRenderer from "@/components/AlphaTabRenderer";
 import {
   Emotion,
   EMOTIONS,
@@ -709,6 +710,12 @@ function ChapterCard({
 
             {isExpanded && prog && (
               <Animated.View entering={FadeIn.duration(200)} style={styles.chapterExpanded}>
+                <AlphaTabRenderer
+                  chords={prog.chords}
+                  title={chapter.chapterTitle}
+                  keyName={prog.key}
+                  tempo={90}
+                />
                 {prog.chords.map((chord, ci) => {
                   const pickerId = `${index}-${ci}`;
                   const isPickerOpen = activeExtPicker === pickerId;

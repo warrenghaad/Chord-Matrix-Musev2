@@ -30,6 +30,7 @@ import EmotionGrid from "@/components/EmotionGrid";
 import KeySelector from "@/components/KeySelector";
 import ChordCard from "@/components/ChordCard";
 import FretboardDiagram from "@/components/FretboardDiagram";
+import AlphaTabRenderer from "@/components/AlphaTabRenderer";
 
 const STORAGE_KEY = "@chordflow_saved";
 
@@ -275,11 +276,18 @@ export default function GenerateScreen() {
                 ))}
             </View>
 
+            <AlphaTabRenderer
+              chords={currentProgression.chords}
+              title={`${currentProgression.emotion}`}
+              keyName={currentProgression.key}
+              tempo={100}
+            />
+
             <View style={[styles.fretboardSection, { backgroundColor: palette.deepNavy, borderColor: palette.cardBorder }]}>
               <View style={styles.narrativeHeader}>
                 <Feather name="grid" size={14} color="#10B981" />
                 <Text style={[styles.narrativeTitle, { color: "#10B981" }]}>
-                  Fretboard Diagrams
+                  Chord Diagrams
                 </Text>
               </View>
               <ScrollView
