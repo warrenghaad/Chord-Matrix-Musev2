@@ -18,6 +18,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "book", selected: "book.fill" }} />
         <Label>Story</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="chat">
+        <Icon sf={{ default: "bubble.left.and.bubble.right", selected: "bubble.left.and.bubble.right.fill" }} />
+        <Label>Chat</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="flow">
         <Icon sf={{ default: "arrow.triangle.branch", selected: "arrow.triangle.branch" }} />
         <Label>Flow</Label>
@@ -78,6 +82,15 @@ function ClassicTabLayout() {
           title: "Story",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="book-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: "Chat",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles-outline" size={size} color={color} />
           ),
         }}
       />

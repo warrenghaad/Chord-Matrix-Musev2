@@ -19,6 +19,7 @@ import Animated, {
   FadeIn,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import Colors from "@/constants/colors";
 import {
   Emotion,
@@ -26,6 +27,7 @@ import {
   generateProgression,
   formatChord,
 } from "@/lib/music-engine";
+import { useChatStore } from "@/lib/chat-store";
 import EmotionGrid from "@/components/EmotionGrid";
 import KeySelector from "@/components/KeySelector";
 import ChordCard from "@/components/ChordCard";
@@ -36,10 +38,28 @@ const STORAGE_KEY = "@chordflow_saved";
 
 export default function GenerateScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { palette } = Colors;
+  const { recordEvent, setBridge } = useChatStore();
 
   const [selectedEmotion, setSelectedEmotion] = useState<Emotion | null>(null);
   const [selectedKey, setSelectedKey] = useState("C");
+
+  const handleSelectEmotion = useCallback(
+    (emotion: Emotion) => {
+      setSelectedEmotion(emotion);
+      recordEvent({ type: "emotionSelected", emotion });
+    },
+    [recordEvent],
+  );
+
+  const handleSelectKey = useCallback(
+    (key: string) => {
+      setSelectedKey(key);
+      recordEvent({ type: "keySelected", key });
+    },
+    [recordEvent],
+  );
   const [currentProgression, setCurrentProgression] =
     useState<Progression | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -75,8 +95,16 @@ export default function GenerateScreen() {
       const prog = generateProgression(selectedEmotion, selectedKey);
       setCurrentProgression(prog);
       setGenerating(false);
+      recordEvent({
+        type: "progressionGenerated",
+        emotion: selectedEmotion,
+        key: selectedKey,
+      });
+      prog.chords.forEach((c) => {
+        if (c.extension) recordEvent({ type: "extensionExplored", extension: c.extension });
+      });
     }, 150);
-  }, [selectedEmotion, selectedKey]);
+  }, [selectedEmotion, selectedKey, recordEvent]);
 
   const handleSave = useCallback(async () => {
     if (!currentProgression) return;
@@ -88,10 +116,27 @@ export default function GenerateScreen() {
       saved.unshift({ ...currentProgression, saved: true });
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
       setCurrentProgression({ ...currentProgression, saved: true });
+      recordEvent({ type: "progressionSaved" });
     } catch (e) {
       console.error("Save failed:", e);
     }
-  }, [currentProgression]);
+  }, [currentProgression, recordEvent]);
+
+  const handleAskAboutProgression = useCallback(() => {
+    if (!currentProgression) return;
+    Haptics.selectionAsync();
+    const chordList = currentProgression.chords
+      .map((c) => `${formatChord(c)} (${c.narrativeRole})`)
+      .join(" - ");
+    setBridge({
+      label: `${currentProgression.emotion} progression in ${currentProgression.key}`,
+      detail: `The player generated a "${currentProgression.emotion}" progression in the key of ${currentProgression.key}: ${chordList}.`,
+      seedQuestion: "What makes this progression work, and how could I make it more interesting?",
+      emotion: currentProgression.emotion,
+      key: currentProgression.key,
+    });
+    router.push("/chat");
+  }, [currentProgression, setBridge, router]);
 
   const webTopInset = Platform.OS === "web" ? 67 : 0;
 
@@ -124,7 +169,7 @@ export default function GenerateScreen() {
               Key Center
             </Text>
           </View>
-          <KeySelector selected={selectedKey} onSelect={setSelectedKey} />
+          <KeySelector selected={selectedKey} onSelect={handleSelectKey} />
         </View>
 
         <View style={styles.section}>
@@ -136,7 +181,7 @@ export default function GenerateScreen() {
           </View>
           <EmotionGrid
             selected={selectedEmotion}
-            onSelect={setSelectedEmotion}
+            onSelect={handleSelectEmotion}
           />
         </View>
 
@@ -189,21 +234,31 @@ export default function GenerateScreen() {
                   {selectedEmotion} / Key of {currentProgression.key}
                 </Text>
               </View>
-              <Pressable
-                onPress={handleSave}
-                disabled={currentProgression.saved}
-                hitSlop={12}
-              >
-                <Feather
-                  name={currentProgression.saved ? "check" : "bookmark"}
-                  size={22}
-                  color={
-                    currentProgression.saved
-                      ? palette.success
-                      : palette.amber
-                  }
-                />
-              </Pressable>
+              <View style={styles.resultActions}>
+                <Pressable
+                  onPress={handleAskAboutProgression}
+                  hitSlop={12}
+                  style={[styles.askButton, { borderColor: palette.amber + "66" }]}
+                >
+                  <Feather name="message-circle" size={15} color={palette.amber} />
+                  <Text style={[styles.askButtonText, { color: palette.amber }]}>Ask</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSave}
+                  disabled={currentProgression.saved}
+                  hitSlop={12}
+                >
+                  <Feather
+                    name={currentProgression.saved ? "check" : "bookmark"}
+                    size={22}
+                    color={
+                      currentProgression.saved
+                        ? palette.success
+                        : palette.amber
+                    }
+                  />
+                </Pressable>
+              </View>
             </View>
 
             <ScrollView
@@ -395,6 +450,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+  },
+  resultActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  askButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  askButtonText: {
+    fontSize: 13,
+    fontFamily: "SpaceMono_700Bold",
   },
   resultTitle: {
     fontSize: 18,

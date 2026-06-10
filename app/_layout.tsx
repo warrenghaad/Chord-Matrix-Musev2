@@ -21,8 +21,18 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
+    <Stack
+      screenOptions={{
+        headerBackTitle: "Back",
+        headerStyle: { backgroundColor: "#0A0E1A" },
+        headerTintColor: "#F59E0B",
+        headerTitleStyle: { color: "#F1F5F9", fontFamily: "JetBrainsMono_700Bold" },
+        contentStyle: { backgroundColor: "#0A0E1A" },
+      }}
+    >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="discoveries" options={{ title: "Discoveries", presentation: "card" }} />
+      <Stack.Screen name="debug-learner" options={{ title: "Learner Model", presentation: "card" }} />
     </Stack>
   );
 }

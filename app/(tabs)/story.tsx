@@ -20,7 +20,9 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import Colors from "@/constants/colors";
+import { useChatStore } from "@/lib/chat-store";
 import KeySelector from "@/components/KeySelector";
 import FretboardDiagram from "@/components/FretboardDiagram";
 import AlphaTabRenderer from "@/components/AlphaTabRenderer";
@@ -61,7 +63,9 @@ type Mode = "templates" | "custom";
 
 export default function StoryScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { palette } = Colors;
+  const { recordEvent, setBridge } = useChatStore();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
 
   const [mode, setMode] = useState<Mode>("templates");
@@ -156,16 +160,43 @@ export default function StoryScreen() {
       withSpring(1, { damping: 10 })
     );
 
+    let result: StoryChapter[] | null = null;
     if (mode === "templates" && selectedArc) {
-      const result = generateStoryProgression(selectedArc, selectedKey);
-      setChapters(result);
-      setExpandedChapter(0);
+      result = generateStoryProgression(selectedArc, selectedKey);
     } else if (mode === "custom" && customEmotions.length >= 2) {
-      const result = generateCustomStoryProgression(customEmotions, selectedKey);
+      result = generateCustomStoryProgression(customEmotions, selectedKey);
+    }
+    if (result) {
       setChapters(result);
       setExpandedChapter(0);
+      recordEvent({ type: "keySelected", key: selectedKey });
+      result.forEach((ch) => {
+        recordEvent({ type: "emotionSelected", emotion: ch.emotion });
+        ch.progression?.chords.forEach((c) => {
+          if (c.extension) recordEvent({ type: "extensionExplored", extension: c.extension });
+        });
+      });
     }
-  }, [mode, selectedArc, customEmotions, selectedKey]);
+  }, [mode, selectedArc, customEmotions, selectedKey, recordEvent]);
+
+  const handleAskAboutChapter = useCallback(
+    (chapter: StoryChapter) => {
+      Haptics.selectionAsync();
+      const prog = chapter.progression;
+      const chordList = prog
+        ? prog.chords.map((c) => formatChord(c)).join(" - ")
+        : "";
+      setBridge({
+        label: `"${chapter.chapterTitle}" — ${chapter.emotion} chapter`,
+        detail: `The player is exploring a story chapter titled "${chapter.chapterTitle}" (role: ${chapter.storyRole}, emotion: ${chapter.emotion}) in the key of ${prog?.key ?? selectedKey}. Chords: ${chordList}. Narrative: ${chapter.narrativeDescription}`,
+        seedQuestion: "How does this chapter's harmony carry the story's emotion, and what could come next?",
+        emotion: chapter.emotion,
+        key: prog?.key ?? selectedKey,
+      });
+      router.push("/chat");
+    },
+    [setBridge, router, selectedKey],
+  );
 
   const handleSaveAll = useCallback(async () => {
     if (!chapters) return;
@@ -179,10 +210,11 @@ export default function StoryScreen() {
         .map((ch) => ({ ...ch.progression!, saved: true }));
       saved.unshift(...toSave);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+      toSave.forEach(() => recordEvent({ type: "progressionSaved" }));
     } catch (e) {
       console.error("Save failed:", e);
     }
-  }, [chapters]);
+  }, [chapters, recordEvent]);
 
   const canGenerate =
     (mode === "templates" && selectedArc !== null) ||
@@ -479,6 +511,7 @@ export default function StoryScreen() {
                 onExtensionChange={(chordIndex, ext) =>
                   handleExtensionChange(i, chordIndex, ext)
                 }
+                onAsk={() => handleAskAboutChapter(chapter)}
               />
             ))}
           </Animated.View>
@@ -623,6 +656,7 @@ function ChapterCard({
   activeExtPicker,
   onToggleExtPicker,
   onExtensionChange,
+  onAsk,
 }: {
   chapter: StoryChapter;
   index: number;
@@ -632,6 +666,7 @@ function ChapterCard({
   activeExtPicker: string | null;
   onToggleExtPicker: (pickerId: string) => void;
   onExtensionChange: (chordIndex: number, ext: Extension | null) => void;
+  onAsk: () => void;
 }) {
   const { palette } = Colors;
   const emotionData = EMOTIONS.find((e) => e.id === chapter.emotion)!;
@@ -994,6 +1029,19 @@ function ChapterCard({
                     </View>
                   );
                 })}
+
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onAsk();
+                  }}
+                  style={[styles.chapterAskButton, { borderColor: palette.amber + "66" }]}
+                >
+                  <Feather name="message-circle" size={15} color={palette.amber} />
+                  <Text style={[styles.chapterAskText, { color: palette.amber }]}>
+                    Ask about this chapter
+                  </Text>
+                </Pressable>
               </Animated.View>
             )}
           </View>
@@ -1006,6 +1054,20 @@ function ChapterCard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  chapterAskButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  chapterAskText: {
+    fontSize: 13,
+    fontFamily: "SpaceMono_700Bold",
   },
   scrollContent: {
     paddingHorizontal: 20,
