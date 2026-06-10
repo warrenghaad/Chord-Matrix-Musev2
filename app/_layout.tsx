@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
+import { ChatProvider } from "@/lib/chat-store";
 import {
   useFonts,
   SpaceMono_400Regular,
@@ -47,7 +48,9 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView>
           <KeyboardProvider>
-            <RootLayoutNav />
+            <ChatProvider>
+              <RootLayoutNav />
+            </ChatProvider>
           </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

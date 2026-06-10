@@ -16,6 +16,7 @@
     "lint:fix": "npx expo lint --fix"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.37.0",
     "@coderline/alphatab": "^1.8.2",
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@expo-google-fonts/space-mono": "^0.4.2",
