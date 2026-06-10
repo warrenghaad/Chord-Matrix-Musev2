@@ -501,9 +501,11 @@ export default function StoryScreen() {
                 index={i}
                 total={chapters.length}
                 isExpanded={expandedChapter === i}
-                onToggle={() =>
-                  setExpandedChapter(expandedChapter === i ? null : i)
-                }
+                onToggle={() => {
+                  const expanding = expandedChapter !== i;
+                  setExpandedChapter(expanding ? i : null);
+                  if (expanding) recordEvent({ type: "voicingExpanded" });
+                }}
                 activeExtPicker={activeExtPicker}
                 onToggleExtPicker={(pickerId) =>
                   setActiveExtPicker(activeExtPicker === pickerId ? null : pickerId)

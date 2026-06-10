@@ -42,6 +42,10 @@ export default function ChatScreen() {
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const tabBarSpace = Platform.OS === "web" ? 84 : 0;
 
+  // Track the freshest messages so the focus effect's length check isn't stale.
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
   // Pick up a reopened discovery or a context bridge when the tab gains focus.
   useFocusEffect(
     useCallback(() => {
@@ -61,10 +65,10 @@ export default function ChatScreen() {
       const b = consumeBridge();
       if (b) {
         setBridge(b);
-        if (b.seedQuestion && messages.length === 0) setInput(b.seedQuestion);
+        if (b.seedQuestion && messagesRef.current.length === 0)
+          setInput(b.seedQuestion);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []),
+    }, [consumeReopen, consumeBridge, recordEvent]),
   );
 
   const scrollToEnd = useCallback(() => {

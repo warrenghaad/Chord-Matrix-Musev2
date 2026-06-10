@@ -87,21 +87,42 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const modelRef = useRef(learnerModel);
   modelRef.current = learnerModel;
 
+  // Stable refs so consume/set callbacks can have empty deps and stay valid
+  // when captured once inside a focus effect.
+  const pendingBridgeRef = useRef<BridgeContext | null>(null);
+  const pendingReopenRef = useRef<Discovery | null>(null);
+
+  // Buffer events recorded before async hydration finishes so they are not
+  // lost when the persisted model loads in.
+  const readyRef = useRef(false);
+  const eventBufferRef = useRef<LearnerEvent[]>([]);
+
   useEffect(() => {
     (async () => {
+      let model = createLearnerModel();
       try {
         const [rawModel, rawDisc] = await Promise.all([
           AsyncStorage.getItem(LEARNER_KEY),
           AsyncStorage.getItem(DISCOVERIES_KEY),
         ]);
-        if (rawModel) setLearnerModel(migrateLearnerModel(JSON.parse(rawModel)));
+        if (rawModel) model = migrateLearnerModel(JSON.parse(rawModel));
         if (rawDisc) setDiscoveries(JSON.parse(rawDisc));
       } catch (e) {
         console.error("ChatStore load failed:", e);
       } finally {
+        // Replay any events recorded during hydration onto the loaded model.
+        for (const ev of eventBufferRef.current) {
+          model = applyEvent(model, ev);
+        }
+        eventBufferRef.current = [];
+        modelRef.current = model;
+        setLearnerModel(model);
+        readyRef.current = true;
         setReady(true);
+        persistModel(model);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const persistModel = useCallback((model: LearnerModel) => {
@@ -118,6 +139,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const recordEvent = useCallback(
     (event: LearnerEvent) => {
+      // Defer events fired before hydration so the loaded model doesn't clobber them.
+      if (!readyRef.current) {
+        eventBufferRef.current.push(event);
+        return;
+      }
       const next = applyEvent(modelRef.current, event);
       modelRef.current = next;
       setLearnerModel(next);
@@ -132,14 +158,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setBridge = useCallback((bridge: BridgeContext) => {
+    pendingBridgeRef.current = bridge;
     setPendingBridge(bridge);
   }, []);
 
   const consumeBridge = useCallback(() => {
-    const b = pendingBridge;
+    const b = pendingBridgeRef.current;
+    pendingBridgeRef.current = null;
     setPendingBridge(null);
     return b;
-  }, [pendingBridge]);
+  }, []);
 
   const saveDiscovery = useCallback(
     (d: Omit<Discovery, "id" | "createdAt">) => {
@@ -166,14 +194,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   );
 
   const reopenDiscovery = useCallback((d: Discovery) => {
+    pendingReopenRef.current = d;
     setPendingReopen(d);
   }, []);
 
   const consumeReopen = useCallback(() => {
-    const d = pendingReopen;
+    const d = pendingReopenRef.current;
+    pendingReopenRef.current = null;
     setPendingReopen(null);
     return d;
-  }, [pendingReopen]);
+  }, []);
 
   const value = useMemo<ChatStore>(
     () => ({
