@@ -55,7 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const system = buildSystemPrompt(mode as ChatMode, context);
 
       const stream = anthropic.messages.stream({
-        model: DEFAULT_MODEL_STR, // "claude-sonnet-4-20250514"
+        model: DEFAULT_MODEL_STR,
         max_tokens: 1500,
         system,
         messages: messages.map((m) => ({ role: m.role, content: m.content })),
